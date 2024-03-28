@@ -54,14 +54,15 @@ for category_name, category_href in all_categories.items():
 
     with open(f'data/{count}_{category_name_final}.html') as file:
         src = file.read()
-
+    # cобираем заголовки и проверяем наличие "Описание"
     soup = BeautifulSoup(src, 'lxml')
-    description = soup.find(class_='tab-block-inner editor').text.strip()
+    titles = soup.find(class_='tab-block').text.strip()
+    print(titles)
 
     with open(f'data/flowers.csv', 'a') as file:
         writer = csv.writer(file)
         writer.writerow((
             category_name_final,
-            description
+            titles
         ))
-    count += 1
+        count += 1
