@@ -3,18 +3,18 @@ import re
 import requests
 from bs4 import BeautifulSoup
 import json
-import csv
 
 
-url = 'https://www.agroviola.ru/collection/albom-vse-sorta'
+base_url = 'https://www.agroviola.ru/collection/albom-vse-sorta'
 
 headers = {
     'Accept': 'text/css,*/*;q=0.1',
     'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
 }
 
-req = requests.get(url, headers=headers)
-src = req.text
+
+response = requests.get(base_url, headers=headers)
+src = response.text
 
 with open('index.html', 'w') as file:
     file.write(src)
@@ -46,8 +46,8 @@ for category_name, category_href in all_categories.items():
     result_string = re.sub(r'\d+', '', category_name)
     category_name_final = result_string.replace('(Весна )', '').strip()
 
-    req = requests.get(url=category_href, headers=headers)
-    src = req.text
+    response = requests.get(url=category_href, headers=headers)
+    src = response.text
 
     with open(f'data/{count}_{category_name_final}.html', 'w') as file:
         file.write(src)
@@ -56,13 +56,31 @@ for category_name, category_href in all_categories.items():
         src = file.read()
     # cобираем заголовки и проверяем наличие "Описание"
     soup = BeautifulSoup(src, 'lxml')
-    titles = soup.find(class_='tab-block').text.strip()
-    print(titles)
 
-    with open(f'data/flowers.csv', 'a') as file:
-        writer = csv.writer(file)
-        writer.writerow((
-            category_name_final,
-            titles
-        ))
-        count += 1
+    data = []
+
+    try:
+        description = soup.find(id='product-description').find(class_='tab-block-inner editor').text.strip()
+
+        data.append(
+            {
+                'name': category_name_final,
+                'description': description
+            }
+        )
+
+        with open(f'data/flowers.json', 'a', encoding='utf-8') as file:
+            json.dump(data, file, indent=4, ensure_ascii=False)
+
+    except AttributeError:
+        data.append(
+            {
+                'name': category_name_final,
+                'description': None
+            }
+        )
+
+        with open(f'data/flowers.json', 'a', encoding='utf-8') as file:
+            json.dump(data, file, indent=4, ensure_ascii=False)
+
+    count += 1
