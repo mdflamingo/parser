@@ -22,7 +22,7 @@ start_time = time.time()
 async def get_page_data(session, page):
     """Получение данных страниц. Пробегает по каждой странице и собирает данные"""
 
-    url = f'https://www.agroviola.ru/collection/albom-vse-sorta?{page}'
+    url = f'https://www.agroviola.ru/collection/albom-vse-sorta?{page}='
 
     async with session.get(url=url, headers=HEADERS) as response:
         response_text = await response.text()
