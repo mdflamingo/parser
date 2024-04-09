@@ -21,16 +21,10 @@ start_time = time.time()
 async def get_page_data(session, page):
     """Получение данных страниц. Пробегает по каждой странице и собирает данные"""
 
-    url = f'https://www.agroviola.ru/collection/albom-vse-sorta?{page}='
+    url = f'https://www.agroviola.ru/collection/albom-vse-sorta?page={page}'
 
     async with session.get(url=url, headers=HEADERS) as response:
         response_text = await response.text()
-
-        # with open('index.html', 'w') as file:
-        #     file.write(response_text)
-        #
-        # with open('index.html') as file:
-        #     src = file.read()
 
         soup = BeautifulSoup(response_text, 'lxml')
 
@@ -44,27 +38,15 @@ async def get_page_data(session, page):
 
             all_flowers_dict[item_text.strip()] = item_href
 
-        with open('all_categories_dict.json', 'w') as file:
-            json.dump(all_flowers_dict, file, indent=4, ensure_ascii=False)
-
-        with open('all_categories_dict.json') as file:
-            all_flowers = json.load(file)
-
         count = 0
 
-        for name, url in all_flowers.items():
+        for name, url in all_flowers_dict.items():
             result_string = re.sub(r'\d+', '', name)
             category_name_final = result_string.replace('(Весна )', '').strip()
 
             async with session.get(url=url, headers=HEADERS) as response:
                 response = await response.text()
 
-                # with open(f'data/{count}_{category_name_final}.html', 'w') as file:
-                #     file.write(src)
-                #
-                # with open(f'data/{count}_{category_name_final}.html') as file:
-                #     src = file.read()
-                # cобираем заголовки и проверяем наличие "Описание"
                 soup = BeautifulSoup(response, 'lxml')
 
                 try:
@@ -94,12 +76,12 @@ async def gather_data():
     async with aiohttp.ClientSession() as session:
         response = await session.get(url=BASE_URL, headers=HEADERS)
         soup = BeautifulSoup(await response.text(), 'lxml')
-        # pagination_block = soup.find('ul', class_='pagination')
-        # pages = pagination_block.find_all('a', class_='pagination-link')[-1].text.strip()
+        pagination_block = soup.find('ul', class_='pagination')
+        pages = pagination_block.find_all('a', class_='pagination-link')[-1].text.strip()
 
         tasks = []
 
-        for page in range(1, 3):
+        for page in range(1, int(pages)):
             task = asyncio.create_task(get_page_data(session, page))
             tasks.append(task)
 
@@ -107,18 +89,16 @@ async def gather_data():
 
 
 def main():
-    try:
-        asyncio.run(gather_data())
-        finish_time = time.time() - start_time
+    # try:
+    asyncio.run(gather_data())
 
-        with open(f'data/flowers.json', 'w', encoding='utf-8') as file:
-            json.dump(data, file, indent=4, ensure_ascii=False)
+    with open(f'data/flowers.json', 'a', encoding='utf-8') as file:
+        json.dump(data, file, indent=4, ensure_ascii=False)
 
-        print(f'Затраченное время на работу скрипта: {finish_time}')
-    except Exception as e:
-        with open(f'data/flowers.json', 'w', encoding='utf-8') as file:
-            json.dump(data, file, indent=4, ensure_ascii=False)
-        print(f'Возникла ошибка: {e}')
+    # except Exception as e:
+    #     with open(f'data/flowers.json', 'a', encoding='utf-8') as file:
+    #         json.dump(data, file, indent=4, ensure_ascii=False)
+      #  print(f'Возникла ошибка: {e}')
 
 
 if __name__ == '__main__':

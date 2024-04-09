@@ -25,12 +25,12 @@ async def parse_data(url):
     try:
         response = await send_request(url)
         soup = BeautifulSoup(response, 'lxml')
-        # pagination_block = soup.find('ul', class_='pagination')
-        # pages = pagination_block.find_all('a', class_='pagination-link')[-1].text.strip()
+        pagination_block = soup.find('ul', class_='pagination')
+        pages = pagination_block.find_all('a', class_='pagination-link')[-1].text.strip()
 
         all_flowers_dict = {}
 
-        for page in range(1, 4):
+        for page in range(1, int(pages)):
             page_response = await send_request(BASE_URL + f'page={page}')
 
             soup = BeautifulSoup(page_response, 'lxml')
@@ -83,9 +83,22 @@ async def parse_data(url):
         print(f'Возникла ошибка {e}')
 
 
+async def gather_data():
+    async with aiohttp.ClientSession() as session:
+        response = await session.get(url=BASE_URL, headers=HEADERS)
+
+        tasks = []
+
+        for page in range(1, 39):
+            task = asyncio.create_task(parse_data(page))
+            tasks.append(task)
+
+        await asyncio.gather(*tasks)
+
+
 def main():
     try:
-        asyncio.run(parse_data(url=BASE_URL))
+        asyncio.run(gather_data())
 
         with open(f'data/flowers.json', 'a', encoding='utf-8') as file:
             json.dump(data, file, indent=4, ensure_ascii=False)
